@@ -36,6 +36,9 @@ const std::string PARAMETER_NAME_NBEST = "nbest";
 const std::string PARAMETER_NAME_INTERMEDIATE = "intermediate";
 const std::string PARAMETER_NAME_END_OF_SPEECH = "endofspeech";
 const std::string PARAMETER_MULTIPART = "multipart";
+const std::string PARAMETER_PHRASE_ID = "phraseid";
+const std::string PARAMETER_CONF_THRESHOLD = "conf_threshold";
+const std::string PARAMETER_CONF_DEFAULT = "conf_default";
 
 class ResponseParams {
 public:
@@ -84,6 +87,15 @@ void apply_request_parameters(FCGX_Request &request, RequestRawReader &reader, R
 			} else if (PARAMETER_MULTIPART == name) {
 				params.multipart = to_bool(value.data());
 				KALDI_VLOG(1) << "Setting multipart: " << (params.multipart ? "enabled" : "disabled");
+			} else if (PARAMETER_PHRASE_ID == name) {
+				reader.phrase_id = value;
+				KALDI_VLOG(1) << "Setting intermediate interval: " << reader.IntermediateIntervalMillisec() << " ms";
+			} else if (PARAMETER_CONF_DEFAULT == name) {
+              reader.conf_default = std::stod(value);
+				KALDI_VLOG(1) << "Setting intermediate interval: " << reader.IntermediateIntervalMillisec() << " ms";
+			} else if (PARAMETER_CONF_THRESHOLD == name) {
+              reader.conf_threshold = std::stod(value);
+				KALDI_VLOG(1) << "Setting intermediate interval: " << reader.IntermediateIntervalMillisec() << " ms";
 			} else {
 				KALDI_VLOG(1) << "Skipping unknown parameter \"" << name << "\"";
 			}
@@ -209,7 +221,7 @@ int FcgiDecodingApp::Run(int argc, char **argv) {
 	}
 
 	if (fcgi_threads_number_ == 1) {
-		KALDI_VLOG(1) << "Single thread running";
+		KALDI_LOG << "Single thread running";
 		ProcessingRoutine(decoder_);
 	} else {
 		std::list<pthread_t> thread_list;
@@ -225,7 +237,7 @@ int FcgiDecodingApp::Run(int argc, char **argv) {
 			}
 		}
 
-		KALDI_VLOG(1) << "Threads ready: " << thread_list.size();
+		KALDI_LOG << "Threads ready: " << thread_list.size();
 
 		for (std::list<pthread_t>::iterator i = thread_list.begin(); i != thread_list.end(); ++i) {
 			if ((errnumber = pthread_join(*i, NULL)) != 0) {
